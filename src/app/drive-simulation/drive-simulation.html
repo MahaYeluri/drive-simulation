@@ -1,0 +1,149 @@
+<div class="container">
+  <header>
+    <h1>🚗 Driving Simulation Playground</h1>
+  </header>
+
+  <!-- Step 1: Create Field -->
+  <mat-card class="section-card" *ngIf="!fieldCreated">
+    <mat-card-header>
+      <mat-card-title> Define Simulation Field</mat-card-title>
+    </mat-card-header>
+    <mat-card-content class="form-content">
+      <form [formGroup]="fieldForm" (ngSubmit)="onFieldFormSubmit()">
+        <div class="row">
+          <mat-form-field appearance="outline">
+            <mat-label>Width (X-axis)</mat-label>
+            <input matInput type="number" formControlName="width">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Height (Y-axis)</mat-label>
+            <input matInput type="number" formControlName="height">
+          </mat-form-field>
+        </div>
+        <button mat-raised-button color="primary" type="submit" [disabled]="!fieldForm.valid">
+          Create {{fieldForm.value.width}}x{{fieldForm.value.height}} Field
+        </button>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Step 2: Manage Cars & Setup Grid -->
+  <div class="simulation-layout" *ngIf="fieldCreated">
+    <div class="controls-panel">
+      <mat-card class="section-card">
+        <mat-card-header>
+          <mat-card-title> Configure Cars</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="field-info">
+            <span>Grid Dimensions: <strong>{{fieldWidth}} x {{fieldHeight}}</strong></span>
+            <button mat-button color="warn" (click)="resetSimulation()">Reset All</button>
+          </div>
+
+          <div [formGroup]="carForm">
+            <div formArrayName="cars">
+              <div *ngFor="let carGroup of cars.controls; let i = index" [formGroupName]="i" class="car-box">
+                <div class="car-header">
+                  <strong>Car #{{i + 1}}</strong>
+                  <button mat-icon-button color="warn" (click)="removeCar(i)" type="button">
+                    🗑️
+                  </button>
+                </div>
+
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Car Name</mat-label>
+                  <input matInput formControlName="name" placeholder="e.g. A">
+                </mat-form-field>
+
+                <div class="row">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Start X</mat-label>
+                    <input matInput type="number" formControlName="x">
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline">
+                    <mat-label>Start Y</mat-label>
+                    <input matInput type="number" formControlName="y">
+                  </mat-form-field>
+                </div>
+
+                <div class="row">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Direction</mat-label>
+                    <mat-select formControlName="direction">
+                      <mat-option *ngFor="let d of directions" [value]="d">{{d}}</mat-option>
+                    </mat-select>
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline">
+                    <mat-label>Commands (L, R, F)</mat-label>
+                    <input matInput formControlName="commands" placeholder="FFRFFFFRRL">
+                  </mat-form-field>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="action-buttons">
+            <button mat-outlined-button color="primary" (click)="addCar()">+ Add Car</button>
+            <button mat-raised-button color="accent" (click)="runSimulation()"
+              [disabled]="cars.length === 0 || carForm.invalid">
+              ▶ Run Simulation
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Step 3: Simulation Results Output -->
+      <mat-card class="section-card" *ngIf="simulationExecuted">
+        <mat-card-header>
+          <mat-card-title> Simulation Results</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="results-list">
+            <div *ngFor="let res of simulationResults" class="result-item">
+              📌 {{ res }}
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- 2D Grid Visualizer -->
+    <div class="grid-panel">
+      <mat-card class="section-card">
+        <mat-card-header>
+          <mat-card-title></mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="grid-container" [style.grid-template-columns]="'repeat(' + fieldWidth + ', 1fr)'">
+            <ng-container *ngFor="let y of gridRows">
+              <div *ngFor="let x of gridCols" class="grid-cell">
+                <span class="coord-label">({{x}},{{y}})</span>
+
+                <div *ngIf="getCarAt(x, y) as car" class="car-badge" [class.collision]="car.status === 'COLLISION'">
+                  <!-- Top-Down Vector Car with CSS Rotation -->
+                  <svg class="car-svg" [style.transform]="getDirectionRotation(car.direction)" viewBox="0 0 100 200"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <!-- Car Body -->
+                    <rect x="15" y="10" width="70" height="180" rx="30" ry="30" class="car-body" />
+                    <!-- Front Windshield -->
+                    <path d="M 25 55 Q 50 45 75 55 L 70 85 Q 50 80 30 85 Z" fill="#1e293b" />
+                    <!-- Rear Windshield -->
+                    <path d="M 28 145 Q 50 150 72 145 L 68 165 Q 50 168 32 165 Z" fill="#1e293b" />
+                    <!-- Headlights -->
+                    <rect x="20" y="12" width="12" height="6" rx="2" fill="#fde047" />
+                    <rect x="68" y="12" width="12" height="6" rx="2" fill="#fde047" />
+                  </svg>
+
+                  <span class="car-name">{{ car.name }}</span>
+                </div>
+              </div>
+            </ng-container>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>
